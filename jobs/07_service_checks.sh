@@ -50,7 +50,7 @@ fi
 ################################
 SMB_HOSTS="$(hosts_for_port 445 || true)"
 if [[ -n "$SMB_HOSTS" ]]; then
-  echo "[*] nmap smb2-security-mode,smb-os-discovery"
+  echo "[*] nmap smb2-security-mode,smb2-time,smb-os-discovery,smb2-capabilities"
   : > "$OUT/services/smb_info.txt"
   echo $SMB_HOSTS | tr ' ' '\n' | nmap_chunked "$OUT/services/smb_info.txt" -Pn -n --script "smb2-security-mode,smb2-time,smb-os-discovery,smb2-capabilities" -p445 || true
 fi
