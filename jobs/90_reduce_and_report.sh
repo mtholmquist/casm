@@ -41,6 +41,13 @@ mkdir -p "$OUT" "$EVID"
       select(.severity=="critical" or .severity=="high")
       | "- \(.host) \(.port)/\(.service) [\(.severity)] - \(.remediation)"
     ' "$OUT/vulns_summary.jsonl" 2>/dev/null || true
+    # Provide counts by severity for a quick overview
+    echo
+    echo "Totals by severity:"
+    jq -r 'select(.severity=="critical" or .severity=="high") | .severity' "$OUT/vulns_summary.jsonl" 2>/dev/null \
+      | sort | uniq -c | while read -r count severity; do
+          echo "- ${severity^}: $count"
+        done
   else
     echo "- No vulnerability summary findings (file missing or jq not installed)."
   fi
