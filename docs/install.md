@@ -22,6 +22,13 @@ Install Python-based tools with:
 pip install -r requirements.txt
 ```
 
+The `enum4linux-ng` dependency is pulled directly from its GitHub repository using a
+Git-based requirement:
+
+```
+git+https://github.com/cddmp/enum4linux-ng.git#egg=enum4linux-ng
+```
+
 ## System packages (APT)
 Install common command‑line dependencies:
 

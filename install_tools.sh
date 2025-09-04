@@ -10,6 +10,8 @@ fi
 
 # Install Python tools
 pip install -r requirements.txt
+# Ensure enum4linux-ng is installed from its GitHub repository
+pip install git+https://github.com/cddmp/enum4linux-ng.git
 
 # Install Go-based utilities
 if command -v go >/dev/null 2>&1; then
