@@ -149,5 +149,73 @@ if [[ -n "$SNMP_HOSTS" && -s "$OUT/snmp_communities.txt" && $(have snmpwalk && e
     done < "$OUT/snmp_communities.txt"
   done <<< "$SNMP_HOSTS"
 fi
+################################
+# Parse service output for basic security issues
+################################
+VULNS_FILE="$OUT/services_vulns.jsonl"
+: > "$VULNS_FILE"
+
+# RDP: NLA disabled / legacy security layer
+if [[ -s "$OUT/services/rdp_enum.txt" ]]; then
+  awk '/^Nmap scan report for/{host=$NF; gsub(/[()]/,"",host)}
+       /Security layer:[ \t]*RDP/{printf("{\"host\":\"%s\",\"port\":\"3389\",\"service\":\"rdp\",\"severity\":\"high\",\"remediation\":\"Enable NLA and TLS for RDP\"}\n",host)}'
+    "$OUT/services/rdp_enum.txt" >>"$VULNS_FILE" 2>/dev/null || true
+fi
+
+# SMB: signing not required/disabled
+if [[ -s "$OUT/services/smb_info.txt" ]]; then
+  awk '/^Nmap scan report for/{host=$NF; gsub(/[()]/,"",host)}
+       /Message signing enabled but not required|Message signing disabled/{printf("{\"host\":\"%s\",\"port\":\"445\",\"service\":\"smb\",\"severity\":\"medium\",\"remediation\":\"Enforce SMB signing\"}\n",host)}'
+    "$OUT/services/smb_info.txt" >>"$VULNS_FILE" 2>/dev/null || true
+fi
+
+# LDAP: anonymous bind permitted
+if [[ -s "$OUT/services/ldap_search.txt" ]]; then
+  awk '/^Nmap scan report for/{host=$NF; gsub(/[()]/,"",host)}
+       /Anonymous bind:.*(Success|Allowed)/{printf("{\"host\":\"%s\",\"port\":\"389\",\"service\":\"ldap\",\"severity\":\"medium\",\"remediation\":\"Disable anonymous LDAP binds\"}\n",host)}'
+    "$OUT/services/ldap_search.txt" >>"$VULNS_FILE" 2>/dev/null || true
+fi
+
+# MySQL: empty/root password
+if [[ -s "$OUT/services/mysql_info.txt" ]]; then
+  awk '/^Nmap scan report for/{host=$NF; gsub(/[()]/,"",host)}
+       /Account with USER.* and no password was able to connect/{printf("{\"host\":\"%s\",\"port\":\"3306\",\"service\":\"mysql\",\"severity\":\"high\",\"remediation\":\"Set a strong MySQL root password\"}\n",host)}'
+    "$OUT/services/mysql_info.txt" >>"$VULNS_FILE" 2>/dev/null || true
+fi
+
+# Redis: unauthenticated access
+if [[ -s "$OUT/services/redis_info.txt" ]]; then
+  awk '/^Nmap scan report for/{host=$NF; gsub(/[()]/,"",host)}
+       /Authentication disabled|No authentication required/{printf("{\"host\":\"%s\",\"port\":\"6379\",\"service\":\"redis\",\"severity\":\"high\",\"remediation\":\"Require Redis AUTH or restrict access\"}\n",host)}'
+    "$OUT/services/redis_info.txt" >>"$VULNS_FILE" 2>/dev/null || true
+fi
+
+# VNC: no authentication
+if [[ -s "$OUT/services/vnc_info.txt" ]]; then
+  awk '/^Nmap scan report for/{host=$NF; gsub(/[()]/,"",host)}
+       /^[0-9]+\/tcp/{split($1,p,"/");port=p[1]}
+       /No authentication|Authentication disabled/{printf("{\"host\":\"%s\",\"port\":\"%s\",\"service\":\"vnc\",\"severity\":\"high\",\"remediation\":\"Enable VNC authentication\"}\n",host,port)}'
+    "$OUT/services/vnc_info.txt" >>"$VULNS_FILE" 2>/dev/null || true
+fi
+
+# DNS: recursion enabled
+if [[ -s "$OUT/services/dns_recursion.txt" ]]; then
+  awk '/^Nmap scan report for/{host=$NF; gsub(/[()]/,"",host)}
+       /recursion available/{printf("{\"host\":\"%s\",\"port\":\"53\",\"service\":\"dns\",\"severity\":\"medium\",\"remediation\":\"Disable DNS recursion\"}\n",host)}'
+    "$OUT/services/dns_recursion.txt" >>"$VULNS_FILE" 2>/dev/null || true
+fi
+
+# NFS: exported shares
+if [[ -s "$OUT/services/nfs_showmount.txt" ]]; then
+  awk '/^Nmap scan report for/{host=$NF; gsub(/[()]/,"",host)}
+       /\|\s*\//{printf("{\"host\":\"%s\",\"port\":\"2049\",\"service\":\"nfs\",\"severity\":\"medium\",\"remediation\":\"Restrict NFS exports\"}\n",host)}'
+    "$OUT/services/nfs_showmount.txt" >>"$VULNS_FILE" 2>/dev/null || true
+fi
+
+# SNMP: accessible with provided communities
+if [[ -s "$OUT/services/snmp_sysdescr.txt" ]]; then
+  awk '{host=$1; printf("{\"host\":\"%s\",\"port\":\"161\",\"service\":\"snmp\",\"severity\":\"low\",\"remediation\":\"Restrict SNMP access or disable if unnecessary\"}\n",host)}' \
+    "$OUT/services/snmp_sysdescr.txt" >>"$VULNS_FILE" 2>/dev/null || true
+fi
 echo "[+] Service checks complete."
 
