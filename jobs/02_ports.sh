@@ -9,4 +9,4 @@ naabu -list "$OUT/live.txt" -top-ports "$TOP_PORTS" -rate "$RATE" -silent \
 awk -F: '{print $1}' "$OUT/open.ports" | sort -u > "$OUT/hosts.open"
 wc -l "$OUT/hosts.open" | sed 's/^/[+] Hosts with open ports: /'
 echo "[*] Service fingerprint (nmap)"
-nmap -sV --version-light --top-ports 200 -iL "$OUT/hosts.open" -oA "$OUT/nmap_top200" || true
+nmap -sV --top-ports 300 -iL "$OUT/hosts.open" -oA "$OUT/nmap_top300" || true
