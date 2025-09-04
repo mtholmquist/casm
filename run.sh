@@ -111,8 +111,15 @@ run_stage "06_vulns_nuclei"        "$BASE/jobs/06_vulns_nuclei.sh"       "$OUT"
 run_stage "90_reduce_and_report"   "$BASE/jobs/90_reduce_and_report.sh"  "$OUT" "$EVID"
 
 # ---- HITL gate ----
-if [[ ! -f "$OUT/APPROVED" ]]; then
-  echo "[!] Waiting for HITL approval in $OUT. Touch $OUT/APPROVED to continue."
+if [[ -t 0 ]]; then
+  read -rp "Proceed to ticketing? [y/N] " _ans || {
+    echo "[!] No input received." >&2; exit 2; }
+  if [[ ! $_ans =~ ^[Yy] ]]; then
+    echo "[!] Aborting without ticketing." >&2
+    exit 2
+  fi
+else
+  echo "[!] Waiting for HITL approval in $OUT. Touch $OUT/APPROVED to continue." >&2
   exit 2
 fi
 
