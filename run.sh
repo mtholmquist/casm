@@ -80,10 +80,13 @@ OUT="$OUT_ROOT/$LABEL"
 EVID="$EVID_ROOT/$LABEL"
 ARCH="$ARCH_ROOT/$LABEL/$NOW"
 
+LOG_DIR="$OUT/logs"
+
 # ---- validate dirs writable (Windows binds) ----
 mkdir -p "$OUT" "$EVID" "$ARCH"
 touch "$OUT/.writetest" "$EVID/.writetest" "$ARCH/.writetest"
 rm -f "$OUT/.writetest" "$EVID/.writetest" "$ARCH/.writetest"
+mkdir -p "$LOG_DIR"
 
 echo "== Targets: ${norms[*]}"
 echo "== OUT  : $OUT"
@@ -94,10 +97,21 @@ echo "== Starting pipeline..."
 run_stage () {
   local name="$1"; shift
   echo "[*] $name"
-  if "$@"; then
-    echo "[+] $name done"
+  local logfile="$LOG_DIR/${name}.log"
+  "$@" >"$logfile" 2>&1 &
+  local pid=$!
+  local elapsed=0
+  while kill -0 "$pid" 2>/dev/null; do
+    sleep 5
+    elapsed=$((elapsed+5))
+    echo "    ... $name running (${elapsed}s elapsed)"
+  done
+  if wait "$pid"; then
+    grep -iE 'warn|error' "$logfile" || true
+    echo "[+] $name done (log: $logfile)"
   else
-    echo "[WARN] $name failed or skipped" >&2
+    tail -n 20 "$logfile" >&2
+    echo "[WARN] $name failed or skipped (log: $logfile)" >&2
   fi
 }
 
