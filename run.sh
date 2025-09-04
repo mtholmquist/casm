@@ -116,6 +116,9 @@ if [[ ! -f "$OUT/APPROVED" ]]; then
   exit 2
 fi
 
+# ---- ticketing stub ----
+run_stage "95_ticketing_stub"      "$BASE/jobs/95_ticketing_stub.sh"     "$OUT"
+
 # ---- archive ----
 echo "[*] Archiving artifacts..."
 mkdir -p "$ARCH/out" "$ARCH/evidence"
