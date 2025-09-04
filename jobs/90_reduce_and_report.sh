@@ -33,7 +33,7 @@ mkdir -p "$OUT" "$EVID"
   else
     echo "- No nuclei findings (file missing or jq not installed)."
   fi
-  # Aggregated high severity vulnerability findings (jsonl)
+  # Aggregated high severity vulnerability findings (web & service)
   if [[ -s "$OUT/vulns_summary.jsonl" ]] && command -v jq >/dev/null 2>&1; then
     echo
     echo "### Aggregated Findings"
@@ -59,22 +59,11 @@ mkdir -p "$OUT" "$EVID"
       | head -n 50 | sed 's/^/- /' || true
   fi
   # Service checks summary
-  if [[ -d "$OUT/services" ]]; then
+  if [[ -s "$OUT/services_vulns.jsonl" ]] && command -v jq >/dev/null 2>&1; then
     echo "" >> "$REPORT"
     echo "## Service Enumeration Highlights" >> "$REPORT"
-    [[ -s "$OUT/services/ssh/"* ]] && echo "- SSH audits: $(ls "$OUT/services/ssh" 2>/dev/null | wc -l) hosts" >> "$REPORT"
-    [[ -s "$OUT/services/rdp_enum.txt" ]] && echo "- RDP encryption info collected." >> "$REPORT"
-    [[ -s "$OUT/services/smb_info.txt" ]] && echo "- SMB info & security mode enumerated." >> "$REPORT"
-    [[ -s "$OUT/services/ldap_search.txt" ]] && echo "- LDAP anonymous search attempted." >> "$REPORT"
-    [[ -s "$OUT/services/winrm_auth.txt" ]] && echo "- WinRM auth methods checked." >> "$REPORT"
-    [[ -s "$OUT/services/mssql_info.txt" ]] && echo "- MSSQL info gathered." >> "$REPORT"
-    [[ -s "$OUT/services/mysql_info.txt" ]] && echo "- MySQL info/empty-password checks." >> "$REPORT"
-    [[ -s "$OUT/services/pgsql_info.txt" ]] && echo "- PostgreSQL version info." >> "$REPORT"
-    [[ -s "$OUT/services/redis_info.txt" ]] && echo "- Redis info (auth exposure) checked." >> "$REPORT"
-    [[ -s "$OUT/services/vnc_info.txt" ]] && echo "- VNC info gathered." >> "$REPORT"
-    [[ -s "$OUT/services/dns_recursion.txt" ]] && echo "- DNS recursion tested." >> "$REPORT"
-    [[ -s "$OUT/services/nfs_showmount.txt" ]] && echo "- NFS exports enumerated." >> "$REPORT"
-    [[ -s "$OUT/services/snmp_sysdescr.txt" ]] && echo "- SNMP sysDescr gathered (approved communities)." >> "$REPORT"
+    jq -r '"- \(.host) \(.port)/\(.service) [\(.severity)] - \(.remediation)"' \
+      "$OUT/services_vulns.jsonl" 2>/dev/null >> "$REPORT"
   fi
   # Screenshots
   if [[ -d "$EVID/screens" ]]; then

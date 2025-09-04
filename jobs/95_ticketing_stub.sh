@@ -15,10 +15,16 @@ REPORT="$(ls -1t "$OUT"/report_*.md 2>/dev/null | head -n1 || true)"
   echo "# Ticket Stub for Findings ($RUNID)"
   echo
   if [[ -n "$REPORT" && -s "$REPORT" ]]; then
-    echo "_Source report: $(basename "$REPORT")_"
+    echo "_Source report: $(basename \"$REPORT\")_"
     echo
-    awk '/## High-Signal Findings/{flag=1;next}/^##/{flag=0}flag' "$REPORT" 2>/dev/null \
+    awk '/## High-Signal Findings/{flag=1;next}/^##/{if(flag)exit}flag' "$REPORT" 2>/dev/null \
       | sed '/^[[:space:]]*$/d'
+    if grep -q "## Service Enumeration Highlights" "$REPORT" 2>/dev/null; then
+      echo
+      echo "## Service Enumeration Highlights"
+      awk '/## Service Enumeration Highlights/{flag=1;next}/^##/{if(flag)exit}flag' "$REPORT" 2>/dev/null \
+        | sed '/^[[:space:]]*$/d'
+    fi
   else
     echo "*No report found to extract findings.*"
   fi
