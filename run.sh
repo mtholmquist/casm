@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Internal ASM orchestrator (robust)
+# CASM orchestrator (robust)
 set -Eeo pipefail
 
-BASE="$HOME/internal-asm"
+BASE="$HOME/casm"
 CONF="$BASE/config/config.env"
 
 OUT_ROOT="$HOME/out"         # Windows-backed
