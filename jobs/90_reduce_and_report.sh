@@ -33,6 +33,16 @@ mkdir -p "$OUT" "$EVID"
   else
     echo "- No nuclei findings (file missing or jq not installed)."
   fi
+  # Vulnerability summary findings (jsonl)
+  if [[ -s "$OUT/vulns_summary.jsonl" ]] && command -v jq >/dev/null 2>&1; then
+    echo
+    echo "### Vulnerability Summary"
+    jq -r '
+      "- \(.host) \(.port)/\(.service) [\(.severity)] - \(.remediation)"
+    ' "$OUT/vulns_summary.jsonl" 2>/dev/null || true
+  else
+    echo "- No vulnerability summary findings (file missing or jq not installed)."
+  fi
   # TLS notes (best-effort grep)
   if [[ -s "$OUT/testssl.txt" ]]; then
     echo
