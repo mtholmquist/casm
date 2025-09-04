@@ -23,7 +23,7 @@ A Unix-like environment with Bash ≥4 and standard coreutils is assumed. The pi
 ./install_tools.sh
 ```
 
-This script installs system packages, Python requirements, and Go-based utilities. See [docs/install.md](docs/install.md) for a detailed table of job scripts and their external commands as well as manual installation steps.
+This script installs system packages, Python requirements (including `enum4linux-ng` from its GitHub repository), and Go-based utilities. See [docs/install.md](docs/install.md) for a detailed table of job scripts and their external commands as well as manual installation steps.
 
 ## Deployment
 1. **Clone** this repository onto the orchestrator machine.
