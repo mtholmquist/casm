@@ -108,6 +108,7 @@ run_stage "07_service_checks"      "$BASE/jobs/07_service_checks.sh"     "$OUT"
 run_stage "04_windows_ad"          "$BASE/jobs/04_windows_ad.sh"         "$OUT"
 run_stage "05_snmp_tls"            "$BASE/jobs/05_snmp_tls.sh"           "$OUT"
 run_stage "06_vulns_nuclei"        "$BASE/jobs/06_vulns_nuclei.sh"       "$OUT"
+run_stage "08_vulns_summary"       "$BASE/jobs/08_vulns_summary.sh"      "$OUT"
 run_stage "90_reduce_and_report"   "$BASE/jobs/90_reduce_and_report.sh"  "$OUT" "$EVID"
 
 # ---- HITL gate ----
