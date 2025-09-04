@@ -40,6 +40,15 @@ mkdir -p "$OUT" "$EVID"
     grep -Ei "certificate|expired|TLSv1[^.2]|weak|insecure|vulnerable" "$OUT/testssl.txt" 2>/dev/null \
       | head -n 50 | sed 's/^/- /' || true
   fi
+  # Aggregated summary of high severity findings
+  if [[ -s "$OUT/vulns_summary.jsonl" ]] && command -v jq >/dev/null 2>&1; then
+    echo
+    echo "### Aggregated Findings"
+    jq -r '
+      select(.severity=="critical" or .severity=="high")
+      | "- " + .host + " (" + .service + ") â€” " + .description + " [" + .severity + "]"
+    ' "$OUT/vulns_summary.jsonl" 2>/dev/null || true
+  fi
   # Service checks summary
   if [[ -d "$OUT/services" ]]; then
     echo "" >> "$REPORT"

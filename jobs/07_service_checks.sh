@@ -3,6 +3,8 @@
 set -Eeuo pipefail
 OUT="${1:-$HOME/out}"
 mkdir -p "$OUT/services"
+source "$(dirname "$0")/../lib/vuln_summary.sh"
+SUMMARY="$OUT/vulns_summary.jsonl"
 OPEN_PORTS="$OUT/open.ports"
 # If no open ports, nothing to do
 [[ -s "$OPEN_PORTS" ]] || { echo "[i] $OPEN_PORTS missing/empty; skipping service checks."; exit 0; }
@@ -148,6 +150,27 @@ if [[ -n "$SNMP_HOSTS" && -s "$OUT/snmp_communities.txt" && $(have snmpwalk && e
         >> "$OUT/services/snmp_sysdescr.txt" 2>/dev/null || true
     done < "$OUT/snmp_communities.txt"
   done <<< "$SNMP_HOSTS"
+fi
+# Summarize service findings into JSONL
+if [[ -d "$OUT/services" ]]; then
+  find "$OUT/services" -type f -name "*.txt" | while read -r file; do
+    svc=$(basename "$(dirname "$file")")
+    if [[ "$svc" == "services" ]]; then
+      svc=$(basename "$file" .txt)
+    fi
+    if [[ "$svc" == "ssh" ]]; then
+      host=$(basename "$file" .txt)
+      grep -Ei 'warning|fail|weak|CVE|VULNERABLE|error|anonymous' "$file" | while read -r line; do
+        add_vuln "$SUMMARY" "$host" "$svc" "info" "$line"
+      done
+    else
+      grep -Ei 'vulnerable|weak|anonymous|error' "$file" | while read -r line; do
+        host=$(echo "$line" | awk '{print $1}')
+        [[ "$host" =~ ^[0-9] ]] || continue
+        add_vuln "$SUMMARY" "$host" "$svc" "info" "$line"
+      done
+    fi
+  done
 fi
 echo "[+] Service checks complete."
 
