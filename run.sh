@@ -12,24 +12,15 @@ ARCH_ROOT="$HOME/archive"    # Windows-backed
 # error trap for visibility
 trap 'echo "[ERROR] line $LINENO: command exited with $?" >&2' ERR
 
-# dotted-netmask -> CIDR prefix
-mask2prefix() {
-  case "$1" in
-    255.255.255.255) echo 32 ;; 255.255.255.252) echo 30 ;;
-    255.255.255.248) echo 29 ;; 255.255.255.240) echo 28 ;;
-    255.255.255.224) echo 27 ;; 255.255.255.192) echo 26 ;;
-    255.255.255.128) echo 25 ;; 255.255.255.0)   echo 24 ;;
-    255.255.254.0)   echo 23 ;; 255.255.252.0)   echo 22 ;;
-    255.255.248.0)   echo 21 ;; 255.255.240.0)   echo 20 ;;
-    255.255.224.0)   echo 19 ;; 255.255.192.0)   echo 18 ;;
-    255.255.128.0)   echo 17 ;; 255.255.0.0)     echo 16 ;;
-    255.254.0.0)     echo 15 ;; 255.252.0.0)     echo 14 ;;
-    255.248.0.0)     echo 13 ;; 255.240.0.0)     echo 12 ;;
-    255.224.0.0)     echo 11 ;; 255.192.0.0)     echo 10 ;;
-    255.128.0.0)     echo 9  ;; 255.0.0.0)       echo 8  ;;
-    *) echo "" ;;
-  esac
-}
+
+# load helpers
+if [[ -r "$BASE/lib/net.sh" ]]; then
+  # shellcheck disable=SC1091
+  source "$BASE/lib/net.sh"
+else
+  echo "[!] Missing $BASE/lib/net.sh" >&2
+  exit 1
+fi
 
 # ---- prompt for targets ----
 if [[ -t 0 ]]; then
@@ -50,14 +41,18 @@ while (( i < ${#arr[@]} )); do
   if [[ "$t" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$ ]]; then
     norms+=( "$t" )
   elif [[ "$t" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
-    if (( i+1 < ${#arr[@]} )) && [[ "${arr[$i+1]}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
-      pfx="$(mask2prefix "${arr[$i+1]}")"
-      if [[ -n "$pfx" ]]; then norms+=( "$t/$pfx" ); ((i+=1)); else norms+=( "$t/32" ); fi
-    else
-      norms+=( "$t/32" )
-    fi
+      if (( i+1 < ${#arr[@]} )) && [[ "${arr[$i+1]}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+        if pfx="$(mask2prefix "${arr[$i+1]}")"; then
+          norms+=( "$t/$pfx" )
+          ((i+=1))
+        else
+          norms+=( "$t/32" )
+        fi
+      else
+        norms+=( "$t/32" )
+      fi
   fi
-  ((i+=1))   # <â€” SAFE increment (doesn't trip set -e)
+((i+=1))   # <- SAFE increment (doesn't trip set -e)
 done
 
 if (( ${#norms[@]} == 0 )); then
@@ -94,7 +89,7 @@ echo "== Targets: ${norms[*]}"
 echo "== OUT  : $OUT"
 echo "== EVID : $EVID"
 echo "== ARCH : $ARCH"
-echo "== Starting pipelineâ€¦"
+echo "== Starting pipeline..."
 
 run_stage () {
   local name="$1"; shift
@@ -106,7 +101,7 @@ run_stage () {
   fi
 }
 
-run_stage "01_discover"            "$BASE/jobs/01_discover.sh"           "$OUT"
+run_stage "01_discovery"          "$BASE/jobs/01_discovery.sh"         "$OUT"
 run_stage "02_ports"               "$BASE/jobs/02_ports.sh"              "$OUT"
 run_stage "03_web"                 "$BASE/jobs/03_web.sh"                "$OUT" "$EVID"
 run_stage "07_service_checks"      "$BASE/jobs/07_service_checks.sh"     "$OUT"
@@ -122,7 +117,7 @@ if [[ ! -f "$OUT/APPROVED" ]]; then
 fi
 
 # ---- archive ----
-echo "[*] Archiving artifactsâ€¦"
+echo "[*] Archiving artifacts..."
 mkdir -p "$ARCH/out" "$ARCH/evidence"
 rsync -a --delete "$OUT/"  "$ARCH/out/"      || true
 rsync -a --delete "$EVID/" "$ARCH/evidence/" || true

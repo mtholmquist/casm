@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Non-web service enumeration (safe/read-only)
+# Non-web service enumeration (read-only where possible; some checks attempt authentication)
 set -Eeuo pipefail
 OUT="${1:-$HOME/out}"
 mkdir -p "$OUT/services"
@@ -15,7 +15,7 @@ nmap_chunked() {
   # read host list from stdin; run nmap in chunks of 128 hosts
   awk '{print $1}' | xargs -r -n128 -P 1 nmap "$@" -oN "$outfile" --append-output
 }
-echo "[*] Service checks â†’ output in $OUT/services"
+echo "[*] Service checks -> output in $OUT/services"
 ################################
 # SSH (22) - ssh-audit (safe)
 ################################
@@ -82,7 +82,7 @@ if [[ -n "$MSSQL_HOSTS" ]]; then
   echo $MSSQL_HOSTS | tr ' ' '\n' | nmap_chunked "$OUT/services/mssql_info.txt" -Pn -n --script "ms-sql-info,ms-sql-ntlm-info" -p1433 || true
 fi
 ################################
-# MySQL (3306) - info/empty password (safe)
+# MySQL (3306) - info/empty password (attempts auth)
 ################################
 MYSQL_HOSTS="$(hosts_for_port 3306 || true)"
 if [[ -n "$MYSQL_HOSTS" ]]; then
@@ -150,3 +150,4 @@ if [[ -n "$SNMP_HOSTS" && -s "$OUT/snmp_communities.txt" && $(have snmpwalk && e
   done <<< "$SNMP_HOSTS"
 fi
 echo "[+] Service checks complete."
+
